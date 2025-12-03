@@ -65,7 +65,6 @@ const GraphVisualization = ({ data, onNodeClick }: GraphVisualizationProps) => {
         linkDirectionalArrowRelPos={1}
         d3VelocityDecay={0.3}
         d3AlphaDecay={0.02}
-        d3Force="charge" 
         warmupTicks={100}
         cooldownTicks={100}
         onEngineStop={() => {}}
