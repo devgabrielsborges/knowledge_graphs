@@ -62,7 +62,7 @@ const Search = ({ onAddPaper }: SearchProps) => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-neutral-900 border-r border-gray-200 dark:border-neutral-800 w-80 shrink-0">
+    <div className="flex flex-col h-screen bg-white dark:bg-neutral-900 border-r border-gray-200 dark:border-neutral-800 w-80 max-w-full shrink-0">
       <div className="p-4 border-b border-gray-200 dark:border-neutral-800 shrink-0">
         <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Search Papers</h2>
         <form onSubmit={handleSearch} className="relative">

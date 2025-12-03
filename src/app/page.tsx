@@ -11,6 +11,7 @@ export default function Home() {
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [expanding, setExpanding] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const addPaperToGraph = useCallback((paper: Paper) => {
     console.log('Adding paper to graph:', paper.title);
@@ -34,18 +35,23 @@ export default function Home() {
       const authors = paper.authors || [];
       authors.forEach((author) => {
         // Use authorId if available, otherwise create a consistent ID from name
-        const authorId = author.authorId || `author-${author.name.toLowerCase().replace(/\s+/g, '-')}`;
+        const authorId = author.authorId || `author-${author.name.toLowerCase().trim().replace(/\s+/g, '-')}`;
         
-        // Check if author node already exists
-        const existingAuthor = newNodes.find((n) => n.id === authorId);
+        // Check if author node already exists by ID or by matching name
+        const existingAuthor = newNodes.find((n) => 
+          n.id === authorId || 
+          (n.type === 'author' && n.label.toLowerCase().trim() === author.name.toLowerCase().trim())
+        );
+        
+        const finalAuthorId = existingAuthor ? existingAuthor.id : authorId;
         
         if (!existingAuthor) {
           newNodes.push({
-            id: authorId,
+            id: finalAuthorId,
             label: author.name,
             type: 'author',
             val: 10,
-            data: { ...author, authorId },
+            data: { ...author, authorId: finalAuthorId },
             color: '#ef4444'
           });
         }
@@ -56,14 +62,14 @@ export default function Home() {
           const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
           const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
           return (
-            (sourceId === authorId && targetId === paper.paperId) || 
-            (sourceId === paper.paperId && targetId === authorId)
+            (sourceId === finalAuthorId && targetId === paper.paperId) || 
+            (sourceId === paper.paperId && targetId === finalAuthorId)
           );
         });
 
         if (!linkExists) {
           newLinks.push({
-            source: authorId,
+            source: finalAuthorId,
             target: paper.paperId,
             type: 'authorship'
           });
@@ -159,17 +165,45 @@ export default function Home() {
   };
 
   return (
-    <main className="flex h-screen w-full bg-gray-50 dark:bg-neutral-950 overflow-hidden">
-      <Search onAddPaper={addPaperToGraph} />
+    <main className="flex h-screen w-full bg-gray-50 dark:bg-neutral-950 overflow-hidden relative">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="lg:hidden fixed top-3 left-3 z-50 p-2.5 bg-white dark:bg-neutral-800 rounded-lg shadow-lg border border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+        aria-label="Toggle sidebar"
+      >
+        <svg className="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {sidebarOpen ? (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          ) : (
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          )}
+        </svg>
+      </button>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar with mobile responsive behavior */}
+      <div className={`fixed lg:relative inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
+        <Search onAddPaper={addPaperToGraph} />
+      </div>
       
-      <div className="flex-1 flex flex-col relative">
-        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 p-4 flex justify-between items-center shadow-sm z-10">
-          <h1 className="text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-            <Network className="h-6 w-6 text-blue-600 dark:text-blue-500" />
-            Knowledge Graph Explorer
+      <div className="flex-1 flex flex-col relative min-w-0">
+        <header className="bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-800 p-3 pl-14 lg:pl-4 flex justify-between items-center shadow-sm z-10">
+          <h1 className="text-base lg:text-xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 truncate">
+            <Network className="h-5 w-5 lg:h-6 lg:w-6 text-blue-600 dark:text-blue-500 flex-shrink-0" />
+            <span className="truncate">Knowledge Graph Explorer</span>
           </h1>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {graphData.nodes.length} Nodes • {graphData.links.length} Links
+          <div className="text-xs lg:text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2 flex-shrink-0">
+            {graphData.nodes.length}N • {graphData.links.length}L
           </div>
         </header>
         
@@ -179,7 +213,7 @@ export default function Home() {
       </div>
 
       {selectedNode && (
-        <div className="w-80 bg-white dark:bg-neutral-900 border-l border-gray-200 dark:border-neutral-800 overflow-y-auto p-4 shadow-lg z-20">
+        <div className="fixed lg:relative right-0 top-0 bottom-0 w-full sm:w-80 max-w-full lg:max-w-80 bg-white dark:bg-neutral-900 border-l border-gray-200 dark:border-neutral-800 overflow-y-auto p-4 shadow-lg z-50">
           <div className="flex justify-between items-start mb-4">
             <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 break-words">
               {selectedNode.type === 'paper' ? 'Paper Details' : 'Author Details'}
