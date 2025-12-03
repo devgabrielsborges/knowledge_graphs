@@ -33,15 +33,19 @@ export default function Home() {
       // Add author nodes and links
       const authors = paper.authors || [];
       authors.forEach((author) => {
-        if (!author.authorId) return;
+        // Use authorId if available, otherwise create a consistent ID from name
+        const authorId = author.authorId || `author-${author.name.toLowerCase().replace(/\s+/g, '-')}`;
         
-        if (!newNodes.find((n) => n.id === author.authorId)) {
+        // Check if author node already exists
+        const existingAuthor = newNodes.find((n) => n.id === authorId);
+        
+        if (!existingAuthor) {
           newNodes.push({
-            id: author.authorId,
+            id: authorId,
             label: author.name,
             type: 'author',
             val: 10,
-            data: author,
+            data: { ...author, authorId },
             color: '#ef4444'
           });
         }
@@ -52,14 +56,14 @@ export default function Home() {
           const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
           const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
           return (
-            (sourceId === author.authorId && targetId === paper.paperId) || 
-            (sourceId === paper.paperId && targetId === author.authorId)
+            (sourceId === authorId && targetId === paper.paperId) || 
+            (sourceId === paper.paperId && targetId === authorId)
           );
         });
 
         if (!linkExists) {
           newLinks.push({
-            source: author.authorId,
+            source: authorId,
             target: paper.paperId,
             type: 'authorship'
           });
