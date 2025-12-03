@@ -47,11 +47,15 @@ export default function Home() {
         }
 
         // Link author to paper (authorship)
-        // Check if link exists
-        const linkExists = newLinks.find(
-          (l) => (l.source === author.authorId && l.target === paper.paperId) || 
-                 (l.source === paper.paperId && l.target === author.authorId)
-        );
+        // Check if link exists - handle both string IDs and link objects
+        const linkExists = newLinks.find((l) => {
+          const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+          const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+          return (
+            (sourceId === author.authorId && targetId === paper.paperId) || 
+            (sourceId === paper.paperId && targetId === author.authorId)
+          );
+        });
 
         if (!linkExists) {
           newLinks.push({
@@ -73,7 +77,11 @@ export default function Home() {
   const removeNode = (nodeId: string) => {
     setGraphData((prev) => ({
       nodes: prev.nodes.filter((n) => n.id !== nodeId),
-      links: prev.links.filter((l) => l.source !== nodeId && l.target !== nodeId)
+      links: prev.links.filter((l) => {
+        const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+        const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+        return sourceId !== nodeId && targetId !== nodeId;
+      })
     }));
     if (selectedNode?.id === nodeId) {
       setSelectedNode(null);
@@ -97,7 +105,11 @@ export default function Home() {
         } as Paper);
         
         setGraphData(prev => {
-            const linkExists = prev.links.find(l => l.source === citingPaper.paperId && l.target === paperId);
+            const linkExists = prev.links.find(l => {
+              const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+              const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+              return sourceId === citingPaper.paperId && targetId === paperId;
+            });
             if (!linkExists) {
                 return {
                     ...prev,
@@ -120,7 +132,11 @@ export default function Home() {
         } as Paper);
 
         setGraphData(prev => {
-            const linkExists = prev.links.find(l => l.source === paperId && l.target === citedPaper.paperId);
+            const linkExists = prev.links.find(l => {
+              const sourceId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+              const targetId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+              return sourceId === paperId && targetId === citedPaper.paperId;
+            });
             if (!linkExists) {
                 return {
                     ...prev,
